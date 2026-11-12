@@ -81,12 +81,13 @@
   </main>
 
   <script>
-    // DEPLOYED GOOGLE APPS SCRIPT WEB APP URL:
+    // YOUR DEPLOYED APPS SCRIPT WEB APP URL:
     const API_URL = "https://script.google.com/macros/s/AKfycbxm21wuYgqGAeIkJuIliSYEHMxjKO5tZ-cR5MLwT4HxG7sJhoc2yFUC-67b5o2kaY3p/exec";
 
     let globalData = [];
 
     async function fetchData() {
+      const dueTodayContainer = document.getElementById('list-due-today');
       if (!API_URL || API_URL.includes("YOUR_DEPLOYED")) {
         console.warn("API URL not configured yet.");
         return;
@@ -95,30 +96,49 @@
         const res = await fetch(API_URL);
         const data = await res.json();
         globalData = data.assignments || [];
+        console.log("Loaded assignments:", globalData);
         renderDashboard();
         renderClasses();
       } catch (err) {
         console.error("Failed to load dashboard data:", err);
+        if (dueTodayContainer) {
+          dueTodayContainer.innerHTML = `<p class="text-red-400 text-xs py-2">⚠️ Error connecting to Google Sheets API. Check deployment settings.</p>`;
+        }
       }
     }
 
     function renderDashboard() {
-      const todayStr = new Date().toISOString().split('T')[0];
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
 
-      // Due Today
-      const dueToday = globalData.filter(i => i.due_date === todayStr);
+      // Flexible date matching for Due Today
+      const dueToday = globalData.filter(i => {
+        if (!i.due_date) return false;
+        const d = i.due_date.toString().trim();
+        return d.includes(todayStr) || d.toLowerCase() === "today";
+      });
       renderList('list-due-today', dueToday, "No assignments due today! 🎉");
 
-      // Homework Tonight
-      const homework = globalData.filter(i => i.category === "Homework" && i.status !== "Completed");
-      renderList('list-homework-tonight', homework, "All homework caught up!");
+      // Homework (any status not completed)
+      const homework = globalData.filter(i => {
+        const cat = (i.category || '').toLowerCase();
+        const stat = (i.status || '').toLowerCase();
+        return (cat === "homework" || cat === "daily task") && stat !== "completed";
+      });
+      renderList('list-homework-tonight', homework.length > 0 ? homework : globalData, "All homework caught up!");
 
       // Upcoming Tests
-      const tests = globalData.filter(i => i.category === "Test/Quiz" && i.status !== "Completed");
+      const tests = globalData.filter(i => {
+        const cat = (i.category || '').toLowerCase();
+        return cat.includes("test") || cat.includes("quiz");
+      });
       renderList('list-tests', tests, "No upcoming tests or quizzes.");
 
       // Major Projects
-      const projects = globalData.filter(i => i.category === "Project");
+      const projects = globalData.filter(i => {
+        const cat = (i.category || '').toLowerCase();
+        return cat.includes("project");
+      });
       renderList('list-projects', projects, "No active long-term projects.");
     }
 
@@ -131,8 +151,8 @@
       container.innerHTML = items.map(item => `
         <div class="bg-slate-900/90 p-3.5 rounded-lg border border-slate-700/80 flex justify-between items-start gap-3">
           <div class="space-y-1">
-            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-slate-800 text-amber-400 border border-slate-700">${item.class}</span>
-            <p class="font-medium text-slate-100 text-sm mt-1 leading-snug">${item.assignment_name}</p>
+            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-slate-800 text-amber-400 border border-slate-700">${item.class || 'General'}</span>
+            <p class="font-medium text-slate-100 text-sm mt-1 leading-snug">${item.assignment_name || 'Assignment'}</p>
             ${item.link ? `<a href="${item.link}" target="_blank" class="text-xs text-sky-400 hover:underline inline-block mt-1">🔗 Canvas Link</a>` : ''}
           </div>
           <span class="text-xs text-slate-400 font-mono whitespace-nowrap bg-slate-800 px-2 py-1 rounded">${item.due_date || 'No Date'}</span>
@@ -141,13 +161,17 @@
     }
 
     function renderClasses() {
-      const classes = [...new Set(globalData.map(i => i.class))];
+      const classes = [...new Set(globalData.map(i => i.class).filter(Boolean))];
       const filterBar = document.getElementById('class-filter-bar');
+      if (classes.length === 0) {
+        filterBar.innerHTML = `<p class="text-slate-500 text-xs">No class categories found.</p>`;
+        return;
+      }
       filterBar.innerHTML = classes.map(c => `
         <button onclick="filterClass('${c}')" class="px-3.5 py-1.5 rounded-lg text-sm bg-slate-800 border border-slate-700 text-slate-300 hover:bg-amber-500 hover:text-slate-950 font-medium transition">${c}</button>
       `).join('');
 
-      if (classes.length > 0) filterClass(classes[0]);
+      filterClass(classes[0]);
     }
 
     function filterClass(className) {
