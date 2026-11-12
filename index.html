@@ -3,183 +3,315 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Son's Academic Dashboard</title>
+  <title>Lane's Academic Command Center</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen font-sans pb-12">
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans pb-16">
 
-  <!-- Top Bar Header -->
-  <header class="bg-slate-800 border-b border-slate-700 p-4 sticky top-0 z-50 shadow-md">
-    <div class="max-w-6xl mx-auto flex justify-between items-center">
-      <h1 class="text-xl font-bold text-amber-400 flex items-center gap-2">
-        <span>🎓</span> Academic Command Center
-      </h1>
-      <button onclick="fetchData()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold px-4 py-2 rounded-lg text-sm transition flex items-center gap-1.5">
-        🔄 Refresh Data
-      </button>
+  <!-- Top Header Bar -->
+  <header class="bg-slate-900 border-b border-slate-800 p-4 sticky top-0 z-50 shadow-xl">
+    <div class="max-w-6xl mx-auto flex flex-wrap justify-between items-center gap-3">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">🎓</span>
+        <div>
+          <h1 class="text-xl font-bold text-amber-400 leading-none">Lane's Academic Dashboard</h1>
+          <p class="text-xs text-slate-400 mt-0.5">Canvas Assignment Tracker & Daily Agenda</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <label class="flex items-center gap-2 text-xs text-slate-300 bg-slate-800 px-3 py-2 rounded-lg border border-slate-700 cursor-pointer">
+          <input type="checkbox" id="toggle-hide-completed" onchange="renderAll()" class="rounded accent-amber-500">
+          Hide Completed
+        </label>
+        <button onclick="fetchData()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-lg text-sm transition flex items-center gap-1.5 shadow-md">
+          🔄 Refresh
+        </button>
+      </div>
     </div>
   </header>
 
   <main class="max-w-6xl mx-auto p-4 md:p-6 space-y-8">
     
-    <!-- View Navigation Tabs -->
-    <div class="flex gap-2 border-b border-slate-800 pb-2">
-      <button onclick="switchTab('dashboard')" id="btn-dashboard" class="px-4 py-2 rounded-lg font-medium text-amber-400 bg-slate-800 border border-slate-700">
+    <!-- View Switcher Tabs -->
+    <div class="flex gap-3 border-b border-slate-800 pb-3">
+      <button onclick="switchTab('dashboard')" id="btn-dashboard" class="px-5 py-2.5 rounded-xl font-semibold text-amber-400 bg-slate-900 border border-amber-500/30 shadow-md">
         📌 Daily Dashboard
       </button>
-      <button onclick="switchTab('classes')" id="btn-classes" class="px-4 py-2 rounded-lg font-medium text-slate-400 hover:bg-slate-800 transition">
+      <button onclick="switchTab('classes')" id="btn-classes" class="px-5 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-900 transition border border-transparent">
         📚 Class Breakdown
       </button>
     </div>
 
     <!-- 1. DASHBOARD VIEW -->
-    <div id="view-dashboard" class="space-y-6">
+    <div id="view-dashboard" class="space-y-8">
       
-      <!-- Alert Cards Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <!-- Top Grid: Due Today, Homework, Tests -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         
         <!-- Due Today -->
-        <div class="bg-red-950/40 border border-red-800/60 p-5 rounded-xl shadow-lg">
-          <h2 class="text-red-400 font-bold text-lg flex items-center gap-2 mb-3">
-            🚨 Due Today
-          </h2>
-          <div id="list-due-today" class="space-y-2.5">Loading assignments...</div>
+        <div class="bg-red-950/30 border border-red-900/60 p-5 rounded-2xl shadow-xl space-y-4">
+          <div class="flex justify-between items-center border-b border-red-900/40 pb-3">
+            <h2 class="text-red-400 font-bold text-lg flex items-center gap-2">
+              🚨 Due Today / Overdue
+            </h2>
+            <span id="badge-due-today" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-red-900/80 text-red-200">0</span>
+          </div>
+          <div id="list-due-today" class="space-y-3">Loading assignments...</div>
         </div>
 
         <!-- Homework Tonight -->
-        <div class="bg-amber-950/40 border border-amber-800/60 p-5 rounded-xl shadow-lg">
-          <h2 class="text-amber-400 font-bold text-lg flex items-center gap-2 mb-3">
-            🌙 Homework Tonight
-          </h2>
-          <div id="list-homework-tonight" class="space-y-2.5">Loading homework...</div>
+        <div class="bg-amber-950/30 border border-amber-900/60 p-5 rounded-2xl shadow-xl space-y-4">
+          <div class="flex justify-between items-center border-b border-amber-900/40 pb-3">
+            <h2 class="text-amber-400 font-bold text-lg flex items-center gap-2">
+              🌙 Homework & Daily Tasks
+            </h2>
+            <span id="badge-homework" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-900/80 text-amber-200">0</span>
+          </div>
+          <div id="list-homework-tonight" class="space-y-3">Loading homework...</div>
         </div>
 
         <!-- Upcoming Tests & Quizzes -->
-        <div class="bg-purple-950/40 border border-purple-800/60 p-5 rounded-xl shadow-lg">
-          <h2 class="text-purple-400 font-bold text-lg flex items-center gap-2 mb-3">
-            🎯 Upcoming Tests & Quizzes
-          </h2>
-          <div id="list-tests" class="space-y-2.5">Loading tests...</div>
+        <div class="bg-purple-950/30 border border-purple-900/60 p-5 rounded-2xl shadow-xl space-y-4">
+          <div class="flex justify-between items-center border-b border-purple-900/40 pb-3">
+            <h2 class="text-purple-400 font-bold text-lg flex items-center gap-2">
+              🎯 Tests & Quizzes
+            </h2>
+            <span id="badge-tests" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-purple-900/80 text-purple-200">0</span>
+          </div>
+          <div id="list-tests" class="space-y-3">Loading tests...</div>
         </div>
+
       </div>
 
       <!-- Major Projects Section -->
-      <div class="bg-slate-800/90 border border-slate-700 p-6 rounded-xl shadow-lg">
-        <h2 class="text-sky-400 font-bold text-lg mb-4 flex items-center gap-2">
-          🚀 Major Projects & Long-Term Deliverables
-        </h2>
+      <div class="bg-sky-950/20 border border-sky-900/50 p-6 rounded-2xl shadow-xl space-y-4">
+        <div class="flex justify-between items-center border-b border-sky-900/40 pb-3">
+          <h2 class="text-sky-400 font-bold text-lg flex items-center gap-2">
+            🚀 Major Projects & Long-Term Deliverables
+          </h2>
+          <span id="badge-projects" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-sky-900/80 text-sky-200">0</span>
+        </div>
         <div id="list-projects" class="grid grid-cols-1 md:grid-cols-2 gap-4">Loading projects...</div>
       </div>
+
     </div>
 
     <!-- 2. CLASSES VIEW -->
     <div id="view-classes" class="hidden space-y-6">
-      <div id="class-filter-bar" class="flex flex-wrap gap-2"></div>
-      <div id="list-class-items" class="grid grid-cols-1 md:grid-cols-2 gap-4">Select a class tab above</div>
+      <div id="class-filter-bar" class="flex flex-wrap gap-2 pb-2"></div>
+      <div id="list-class-items" class="grid grid-cols-1 md:grid-cols-2 gap-4">Select a class above</div>
     </div>
 
   </main>
 
   <script>
-    // PRE-CONFIGURED WITH YOUR DEPLOYED APPS SCRIPT WEB APP URL:
     const API_URL = "https://script.google.com/macros/s/AKfycbxm21wuYgqGAeIkJuIliSYEHMxjKO5tZ-cR5MLwT4HxG7sJhoc2yFUC-67b5o2kaY3p/exec";
 
-    let globalData = [];
+    let rawAssignments = [];
+    let completedState = JSON.parse(localStorage.getItem('lane_completed_tasks') || '{}');
 
     async function fetchData() {
-      if (!API_URL || API_URL.includes("YOUR_DEPLOYED")) {
-        console.warn("API URL not configured yet.");
-        return;
-      }
       try {
         const res = await fetch(API_URL);
         const data = await res.json();
-        globalData = data.assignments || [];
-        renderDashboard();
-        renderClasses();
+        rawAssignments = data.assignments || [];
+        renderAll();
       } catch (err) {
         console.error("Failed to load dashboard data:", err);
       }
     }
 
-    function renderDashboard() {
-      const now = new Date();
-      const todayStr = now.toISOString().split('T')[0];
-      const norm = (val) => (val || "").toString().trim().toLowerCase();
-
-      // 1. Due Today (Due date matches today AND status not completed)
-      const dueToday = globalData.filter(i => norm(i.due_date) === todayStr && norm(i.status) !== 'completed');
-      renderList('list-due-today', dueToday, "No assignments due today! 🎉");
-
-      // 2. Homework Tonight (All pending homework & daily tasks)
-      const homework = globalData.filter(i => 
-        (norm(i.category) === "homework" || norm(i.category) === "daily task" || !i.category) && 
-        norm(i.status) !== "completed"
-      );
-      renderList('list-homework-tonight', homework, "All homework caught up!");
-
-      // 3. Upcoming Tests & Quizzes (Category contains test, quiz, exam, etc.)
-      const tests = globalData.filter(i => 
-        norm(i.category).includes("test") || 
-        norm(i.category).includes("quiz") || 
-        norm(i.category).includes("exam") || 
-        norm(i.category).includes("assessment")
-      );
-      renderList('list-tests', tests, "No upcoming tests or quizzes.");
-
-      // 4. Major Projects
-      const projects = globalData.filter(i => 
-        norm(i.category).includes("project") || 
-        norm(i.category).includes("essay") || 
-        norm(i.category).includes("paper") || 
-        norm(i.category).includes("report")
-      );
-      renderList('list-projects', projects, "No active long-term projects.");
+    function toggleTaskStatus(taskId, isChecked) {
+      completedState[taskId] = isChecked;
+      localStorage.setItem('lane_completed_tasks', JSON.stringify(completedState));
+      renderAll();
     }
 
-    function renderList(elementId, items, emptyMsg) {
-      const container = document.getElementById(elementId);
+    function getTodayString() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function renderAll() {
+      renderDashboard();
+      renderClasses();
+    }
+
+    function renderDashboard() {
+      const todayStr = getTodayString();
+      const hideCompleted = document.getElementById('toggle-hide-completed').checked;
+
+      // Helper function for field values
+      const getVal = (item, key) => (item[key] || '').toString().trim();
+      const norm = (item, key) => getVal(item, key).toLowerCase();
+
+      // Filter active items
+      let items = rawAssignments.map(item => {
+        const id = item.id || (item.class + '-' + item.assignment_name);
+        const isCompletedLocally = !!completedState[id];
+        const isCompletedSheet = norm(item, 'status') === 'completed';
+        const isCompleted = isCompletedLocally || isCompletedSheet;
+        return { ...item, _id: id, _completed: isCompleted };
+      });
+
+      if (hideCompleted) {
+        items = items.filter(i => !i._completed);
+      }
+
+      // 1. Due Today / Overdue
+      const dueToday = items.filter(i => {
+        const d = norm(i, 'due_date');
+        return d === todayStr || d === 'today' || d.includes(todayStr);
+      });
+      renderSection('list-due-today', 'badge-due-today', dueToday, "No assignments due today! 🎉");
+
+      // 2. Upcoming Tests & Quizzes
+      const tests = items.filter(i => {
+        const cat = norm(i, 'category');
+        return cat.includes('test') || cat.includes('quiz') || cat.includes('exam') || cat.includes('assessment') || cat.includes('midterm') || cat.includes('final');
+      });
+      renderSection('list-tests', 'badge-tests', tests, "No tests or quizzes scheduled.");
+
+      // 3. Major Projects
+      const projects = items.filter(i => {
+        const cat = norm(i, 'category');
+        return cat.includes('project') || cat.includes('essay') || cat.includes('paper') || cat.includes('lab') || cat.includes('report') || cat.includes('presentation');
+      });
+      renderSection('list-projects', 'badge-projects', projects, "No major projects active.");
+
+      // 4. Homework & Daily Tasks (Everything else or explicit homework/daily task)
+      const homework = items.filter(i => {
+        const cat = norm(i, 'category');
+        const isTest = cat.includes('test') || cat.includes('quiz') || cat.includes('exam');
+        const isProj = cat.includes('project') || cat.includes('essay') || cat.includes('paper');
+        return !isTest && !isProj;
+      });
+      renderSection('list-homework-tonight', 'badge-homework', homework, "All homework caught up!");
+    }
+
+    function renderSection(listId, badgeId, items, emptyMsg) {
+      const container = document.getElementById(listId);
+      const badge = document.getElementById(badgeId);
+      if (badge) badge.textContent = items.length;
+
       if (!items || items.length === 0) {
         container.innerHTML = `<p class="text-slate-500 italic text-xs py-2">${emptyMsg}</p>`;
         return;
       }
-      container.innerHTML = items.map(item => `
-        <div class="bg-slate-900/90 p-3.5 rounded-lg border border-slate-700/80 flex justify-between items-start gap-3">
-          <div class="space-y-1">
-            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-slate-800 text-amber-400 border border-slate-700">${item.class || 'General'}</span>
-            <p class="font-medium text-slate-100 text-sm mt-1 leading-snug">${item.assignment_name || 'Canvas Task'}</p>
-            ${item.link ? `<a href="${item.link}" target="_blank" class="text-xs text-sky-400 hover:underline inline-block mt-1">🔗 Canvas Link</a>` : ''}
+
+      container.innerHTML = items.map(item => createCardHTML(item)).join('');
+    }
+
+    function createCardHTML(item) {
+      const className = item.class || 'General';
+      const title = item.assignment_name || 'Assignment Title';
+      const category = item.category || 'Homework';
+      const dateAssigned = item.date_assigned || 'N/A';
+      const dueDate = item.due_date || 'No Date';
+      const link = item.link || '';
+      const status = item._completed ? 'Completed' : (item.status || 'Pending');
+
+      return `
+        <div class="bg-slate-900 border ${item._completed ? 'border-slate-800 opacity-60' : 'border-slate-700/80'} p-4 rounded-xl shadow-md space-y-3 transition">
+          
+          <!-- Header: Class, Category, Due Date -->
+          <div class="flex justify-between items-start gap-2">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="text-[11px] font-bold uppercase px-2.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30">${className}</span>
+              <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">${category}</span>
+            </div>
+            <span class="text-xs font-mono font-medium px-2 py-1 rounded bg-slate-800 text-amber-300 border border-slate-700 whitespace-nowrap">
+              Due: ${dueDate}
+            </span>
           </div>
-          <span class="text-xs text-slate-400 font-mono whitespace-nowrap bg-slate-800 px-2 py-1 rounded">${item.due_date || 'Pending'}</span>
+
+          <!-- Assignment Name & Checkbox -->
+          <div class="flex items-start gap-3">
+            <input type="checkbox" onchange="toggleTaskStatus('${item._id}', this.checked)" ${item._completed ? 'checked' : ''} class="w-5 h-5 rounded accent-amber-500 cursor-pointer mt-0.5 shrink-0">
+            <h3 class="font-semibold text-slate-100 text-sm leading-snug ${item._completed ? 'line-through text-slate-500' : ''}">
+              ${title}
+            </h3>
+          </div>
+
+          <!-- Footer Metadata Grid -->
+          <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-400 border-t border-slate-800 pt-2.5">
+            <div>📅 <span class="text-slate-300">Assigned:</span> ${dateAssigned}</div>
+            <div>📌 <span class="text-slate-300">Status:</span> <span class="${item._completed ? 'text-green-400 font-bold' : 'text-amber-400'}">${status}</span></div>
+          </div>
+
+          <!-- Link if present -->
+          ${link ? `
+            <div class="pt-0.5">
+              <a href="${link}" target="_blank" class="text-xs text-sky-400 hover:text-sky-300 underline font-medium flex items-center gap-1">
+                🔗 Open Canvas Link
+              </a>
+            </div>
+          ` : ''}
+
         </div>
-      `).join('');
+      `;
     }
 
     function renderClasses() {
-      const classes = [...new Set(globalData.map(i => i.class).filter(Boolean))];
+      const hideCompleted = document.getElementById('toggle-hide-completed').checked;
+      let items = rawAssignments.map(item => {
+        const id = item.id || (item.class + '-' + item.assignment_name);
+        return { ...item, _id: id, _completed: !!completedState[id] || (item.status || '').toLowerCase() === 'completed' };
+      });
+
+      if (hideCompleted) {
+        items = items.filter(i => !i._completed);
+      }
+
+      const classes = [...new Set(items.map(i => i.class).filter(Boolean))];
       const filterBar = document.getElementById('class-filter-bar');
+      
       if (classes.length === 0) {
-        filterBar.innerHTML = `<p class="text-slate-500 text-xs">No class data found in Master_Assignments.</p>`;
+        filterBar.innerHTML = `<p class="text-slate-500 text-xs">No class categories available.</p>`;
+        document.getElementById('list-class-items').innerHTML = `<p class="text-slate-500 text-xs italic">No assignments found.</p>`;
         return;
       }
-      filterBar.innerHTML = classes.map(c => `
-        <button onclick="filterClass('${c}')" class="px-3.5 py-1.5 rounded-lg text-sm bg-slate-800 border border-slate-700 text-slate-300 hover:bg-amber-500 hover:text-slate-950 font-medium transition">${c}</button>
+
+      filterBar.innerHTML = `
+        <button onclick="filterClass('ALL')" class="px-3.5 py-1.5 rounded-lg text-xs bg-slate-800 border border-slate-700 text-amber-400 font-bold hover:bg-slate-700 transition">All Classes</button>
+      ` + classes.map(c => `
+        <button onclick="filterClass('${c}')" class="px-3.5 py-1.5 rounded-lg text-xs bg-slate-900 border border-slate-800 text-slate-300 font-medium hover:bg-slate-800 hover:text-amber-400 transition">${c}</button>
       `).join('');
 
-      filterClass(classes[0]);
+      filterClass('ALL');
     }
 
     function filterClass(className) {
-      const filtered = globalData.filter(i => i.class === className);
-      renderList('list-class-items', filtered, `No assignments recorded for ${className}.`);
+      const hideCompleted = document.getElementById('toggle-hide-completed').checked;
+      let items = rawAssignments.map(item => {
+        const id = item.id || (item.class + '-' + item.assignment_name);
+        return { ...item, _id: id, _completed: !!completedState[id] || (item.status || '').toLowerCase() === 'completed' };
+      });
+
+      if (hideCompleted) {
+        items = items.filter(i => !i._completed);
+      }
+
+      const filtered = className === 'ALL' ? items : items.filter(i => i.class === className);
+      const container = document.getElementById('list-class-items');
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<p class="text-slate-500 italic text-xs col-span-2 py-4">No assignments recorded for ${className}.</p>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(item => createCardHTML(item)).join('');
     }
 
     function switchTab(tab) {
       document.getElementById('view-dashboard').classList.toggle('hidden', tab !== 'dashboard');
       document.getElementById('view-classes').classList.toggle('hidden', tab !== 'classes');
       
-      document.getElementById('btn-dashboard').className = tab === 'dashboard' ? 'px-4 py-2 rounded-lg font-medium text-amber-400 bg-slate-800 border border-slate-700' : 'px-4 py-2 rounded-lg font-medium text-slate-400 hover:bg-slate-800 transition';
-      document.getElementById('btn-classes').className = tab === 'classes' ? 'px-4 py-2 rounded-lg font-medium text-amber-400 bg-slate-800 border border-slate-700' : 'px-4 py-2 rounded-lg font-medium text-slate-400 hover:bg-slate-800 transition';
+      document.getElementById('btn-dashboard').className = tab === 'dashboard' ? 'px-5 py-2.5 rounded-xl font-semibold text-amber-400 bg-slate-900 border border-amber-500/30 shadow-md' : 'px-5 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-900 transition border border-transparent';
+      document.getElementById('btn-classes').className = tab === 'classes' ? 'px-5 py-2.5 rounded-xl font-semibold text-amber-400 bg-slate-900 border border-amber-500/30 shadow-md' : 'px-5 py-2.5 rounded-xl font-semibold text-slate-400 hover:bg-slate-900 transition border border-transparent';
     }
 
     fetchData();
