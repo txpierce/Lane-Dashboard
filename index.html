@@ -105,24 +105,35 @@
     function renderDashboard() {
       const now = new Date();
       const todayStr = now.toISOString().split('T')[0];
-
-      // Helper: normalize string
       const norm = (val) => (val || "").toString().trim().toLowerCase();
 
-      // Due Today
+      // 1. Due Today (Due date matches today AND status not completed)
       const dueToday = globalData.filter(i => norm(i.due_date) === todayStr && norm(i.status) !== 'completed');
       renderList('list-due-today', dueToday, "No assignments due today! 🎉");
 
-      // Homework Tonight
-      const homework = globalData.filter(i => (norm(i.category) === "homework" || norm(i.category) === "daily task") && norm(i.status) !== "completed");
+      // 2. Homework Tonight (All pending homework & daily tasks)
+      const homework = globalData.filter(i => 
+        (norm(i.category) === "homework" || norm(i.category) === "daily task" || !i.category) && 
+        norm(i.status) !== "completed"
+      );
       renderList('list-homework-tonight', homework, "All homework caught up!");
 
-      // Upcoming Tests & Quizzes (case-insensitive)
-      const tests = globalData.filter(i => norm(i.category).includes("test") || norm(i.category).includes("quiz") || norm(i.category).includes("exam"));
+      // 3. Upcoming Tests & Quizzes (Category contains test, quiz, exam, etc.)
+      const tests = globalData.filter(i => 
+        norm(i.category).includes("test") || 
+        norm(i.category).includes("quiz") || 
+        norm(i.category).includes("exam") || 
+        norm(i.category).includes("assessment")
+      );
       renderList('list-tests', tests, "No upcoming tests or quizzes.");
 
-      // Major Projects
-      const projects = globalData.filter(i => norm(i.category).includes("project") || norm(i.category).includes("essay") || norm(i.category).includes("paper"));
+      // 4. Major Projects
+      const projects = globalData.filter(i => 
+        norm(i.category).includes("project") || 
+        norm(i.category).includes("essay") || 
+        norm(i.category).includes("paper") || 
+        norm(i.category).includes("report")
+      );
       renderList('list-projects', projects, "No active long-term projects.");
     }
 
@@ -148,7 +159,7 @@
       const classes = [...new Set(globalData.map(i => i.class).filter(Boolean))];
       const filterBar = document.getElementById('class-filter-bar');
       if (classes.length === 0) {
-        filterBar.innerHTML = `<p class="text-slate-500 text-xs">No class categories available.</p>`;
+        filterBar.innerHTML = `<p class="text-slate-500 text-xs">No class data found in Master_Assignments.</p>`;
         return;
       }
       filterBar.innerHTML = classes.map(c => `
