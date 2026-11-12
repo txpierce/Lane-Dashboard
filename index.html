@@ -110,6 +110,28 @@
     let rawAssignments = [];
     let completedState = JSON.parse(localStorage.getItem('lane_completed_tasks') || '{}');
 
+    // Multi-key resilient field extractor
+    function getField(item, ...keys) {
+      if (!item) return '';
+      for (const k of keys) {
+        if (item[k] !== undefined && item[k] !== null && item[k].toString().trim() !== '') {
+          return item[k].toString().trim();
+        }
+      }
+      const objKeys = Object.keys(item);
+      for (const target of keys) {
+        const cleanTarget = target.toLowerCase().replace(/[^a-z0-9]/g, '');
+        for (const ok of objKeys) {
+          if (ok.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanTarget) {
+            if (item[ok] !== undefined && item[ok] !== null && item[ok].toString().trim() !== '') {
+              return item[ok].toString().trim();
+            }
+          }
+        }
+      }
+      return '';
+    }
+
     async function fetchData() {
       try {
         const res = await fetch(API_URL);
@@ -144,15 +166,12 @@
       const todayStr = getTodayString();
       const hideCompleted = document.getElementById('toggle-hide-completed').checked;
 
-      // Helper function for field values
-      const getVal = (item, key) => (item[key] || '').toString().trim();
-      const norm = (item, key) => getVal(item, key).toLowerCase();
-
-      // Filter active items
       let items = rawAssignments.map(item => {
-        const id = item.id || (item.class + '-' + item.assignment_name);
+        const className = getField(item, 'class', 'course', 'subject', 'classname') || 'General';
+        const title = getField(item, 'assignment_name', 'assignment', 'title', 'name', 'task') || 'Assignment';
+        const id = getField(item, 'id') || (className + '-' + title);
         const isCompletedLocally = !!completedState[id];
-        const isCompletedSheet = norm(item, 'status') === 'completed';
+        const isCompletedSheet = getField(item, 'status').toLowerCase() === 'completed';
         const isCompleted = isCompletedLocally || isCompletedSheet;
         return { ...item, _id: id, _completed: isCompleted };
       });
@@ -163,28 +182,28 @@
 
       // 1. Due Today / Overdue
       const dueToday = items.filter(i => {
-        const d = norm(i, 'due_date');
+        const d = getField(i, 'due_date', 'due', 'duedate').toLowerCase();
         return d === todayStr || d === 'today' || d.includes(todayStr);
       });
       renderSection('list-due-today', 'badge-due-today', dueToday, "No assignments due today! 🎉");
 
       // 2. Upcoming Tests & Quizzes
       const tests = items.filter(i => {
-        const cat = norm(i, 'category');
+        const cat = getField(i, 'category', 'type').toLowerCase();
         return cat.includes('test') || cat.includes('quiz') || cat.includes('exam') || cat.includes('assessment') || cat.includes('midterm') || cat.includes('final');
       });
       renderSection('list-tests', 'badge-tests', tests, "No tests or quizzes scheduled.");
 
       // 3. Major Projects
       const projects = items.filter(i => {
-        const cat = norm(i, 'category');
+        const cat = getField(i, 'category', 'type').toLowerCase();
         return cat.includes('project') || cat.includes('essay') || cat.includes('paper') || cat.includes('lab') || cat.includes('report') || cat.includes('presentation');
       });
       renderSection('list-projects', 'badge-projects', projects, "No major projects active.");
 
-      // 4. Homework & Daily Tasks (Everything else or explicit homework/daily task)
+      // 4. Homework & Daily Tasks (Everything else)
       const homework = items.filter(i => {
-        const cat = norm(i, 'category');
+        const cat = getField(i, 'category', 'type').toLowerCase();
         const isTest = cat.includes('test') || cat.includes('quiz') || cat.includes('exam');
         const isProj = cat.includes('project') || cat.includes('essay') || cat.includes('paper');
         return !isTest && !isProj;
@@ -206,18 +225,18 @@
     }
 
     function createCardHTML(item) {
-      const className = item.class || 'General';
-      const title = item.assignment_name || 'Assignment Title';
-      const category = item.category || 'Homework';
-      const dateAssigned = item.date_assigned || 'N/A';
-      const dueDate = item.due_date || 'No Date';
-      const link = item.link || '';
-      const status = item._completed ? 'Completed' : (item.status || 'Pending');
+      const className = getField(item, 'class', 'course', 'subject', 'classname') || 'General';
+      const title = getField(item, 'assignment_name', 'assignment', 'title', 'name', 'task') || 'Assignment Title';
+      const category = getField(item, 'category', 'type') || 'Homework';
+      const dateAssigned = getField(item, 'date_assigned', 'dateassigned', 'assigned') || 'N/A';
+      const dueDate = getField(item, 'due_date', 'duedate', 'due') || 'No Date';
+      const link = getField(item, 'link', 'url') || '';
+      const status = item._completed ? 'Completed' : (getField(item, 'status') || 'Pending');
 
       return `
         <div class="bg-slate-900 border ${item._completed ? 'border-slate-800 opacity-60' : 'border-slate-700/80'} p-4 rounded-xl shadow-md space-y-3 transition">
           
-          <!-- Header: Class, Category, Due Date -->
+          <!-- Class Badge & Category Tag -->
           <div class="flex justify-between items-start gap-2">
             <div class="flex flex-wrap items-center gap-1.5">
               <span class="text-[11px] font-bold uppercase px-2.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30">${className}</span>
@@ -228,7 +247,7 @@
             </span>
           </div>
 
-          <!-- Assignment Name & Checkbox -->
+          <!-- Assignment Title & Interactive Checkbox -->
           <div class="flex items-start gap-3">
             <input type="checkbox" onchange="toggleTaskStatus('${item._id}', this.checked)" ${item._completed ? 'checked' : ''} class="w-5 h-5 rounded accent-amber-500 cursor-pointer mt-0.5 shrink-0">
             <h3 class="font-semibold text-slate-100 text-sm leading-snug ${item._completed ? 'line-through text-slate-500' : ''}">
@@ -236,13 +255,13 @@
             </h3>
           </div>
 
-          <!-- Footer Metadata Grid -->
+          <!-- All 7 Explicit Sheet Fields Footer Grid -->
           <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-400 border-t border-slate-800 pt-2.5">
             <div>📅 <span class="text-slate-300">Assigned:</span> ${dateAssigned}</div>
             <div>📌 <span class="text-slate-300">Status:</span> <span class="${item._completed ? 'text-green-400 font-bold' : 'text-amber-400'}">${status}</span></div>
           </div>
 
-          <!-- Link if present -->
+          <!-- Direct Canvas Link -->
           ${link ? `
             <div class="pt-0.5">
               <a href="${link}" target="_blank" class="text-xs text-sky-400 hover:text-sky-300 underline font-medium flex items-center gap-1">
@@ -258,15 +277,17 @@
     function renderClasses() {
       const hideCompleted = document.getElementById('toggle-hide-completed').checked;
       let items = rawAssignments.map(item => {
-        const id = item.id || (item.class + '-' + item.assignment_name);
-        return { ...item, _id: id, _completed: !!completedState[id] || (item.status || '').toLowerCase() === 'completed' };
+        const className = getField(item, 'class', 'course', 'subject', 'classname') || 'General';
+        const title = getField(item, 'assignment_name', 'assignment', 'title', 'name', 'task') || 'Assignment';
+        const id = getField(item, 'id') || (className + '-' + title);
+        return { ...item, _id: id, _completed: !!completedState[id] || getField(item, 'status').toLowerCase() === 'completed' };
       });
 
       if (hideCompleted) {
         items = items.filter(i => !i._completed);
       }
 
-      const classes = [...new Set(items.map(i => i.class).filter(Boolean))];
+      const classes = [...new Set(items.map(i => getField(i, 'class', 'course', 'subject')).filter(Boolean))];
       const filterBar = document.getElementById('class-filter-bar');
       
       if (classes.length === 0) {
@@ -287,15 +308,17 @@
     function filterClass(className) {
       const hideCompleted = document.getElementById('toggle-hide-completed').checked;
       let items = rawAssignments.map(item => {
-        const id = item.id || (item.class + '-' + item.assignment_name);
-        return { ...item, _id: id, _completed: !!completedState[id] || (item.status || '').toLowerCase() === 'completed' };
+        const cn = getField(item, 'class', 'course', 'subject', 'classname') || 'General';
+        const title = getField(item, 'assignment_name', 'assignment', 'title', 'name', 'task') || 'Assignment';
+        const id = getField(item, 'id') || (cn + '-' + title);
+        return { ...item, _id: id, _completed: !!completedState[id] || getField(item, 'status').toLowerCase() === 'completed' };
       });
 
       if (hideCompleted) {
         items = items.filter(i => !i._completed);
       }
 
-      const filtered = className === 'ALL' ? items : items.filter(i => i.class === className);
+      const filtered = className === 'ALL' ? items : items.filter(i => getField(i, 'class', 'course', 'subject') === className);
       const container = document.getElementById('list-class-items');
 
       if (filtered.length === 0) {
