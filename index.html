@@ -148,11 +148,15 @@
       return defaultVal;
     }
 
-    function isHeaderItem(item) {
+    function isNoiseItem(item) {
       const name = getField(item, ['assignment_name', 'name', 'title']).toLowerCase().trim();
-      const className = getField(item, ['class', 'classname']).toLowerCase().trim();
-      const invalidTitles = ['assignment name', 'assignment title', 'assignment', 'title', 'class', 'category', 'due date', 'status', 'link', 'id', 'date assigned', 'raw snippet', ''];
-      return invalidTitles.includes(name) || className === 'class';
+      const genericNoise = ['assignment name', 'assignment title', 'assignment', 'title', 'class', 'category', 'due date', 'status', 'link', 'id', 'date assigned', 'raw snippet', '', 'quiz', 'test', 'exam', 'homework', 'key', 'download', 'file', 'page', 'module', 'unit', 'chapter', 'overview', '100pts', '50pts', 'pts', 'points'];
+      
+      if (genericNoise.includes(name)) return true;
+      if (/^\d+\s*p(ts|oints)?$/i.test(name)) return true;
+      if (/^(keyn\s*)?download\b/i.test(name)) return true;
+      if (name.length < 3) return true;
+      return false;
     }
 
     function renderAll() {
@@ -172,8 +176,8 @@
         return { ...item, _id: id, _completed: isCompleted };
       });
 
-      // Filter out header rows strictly
-      items = items.filter(i => !isHeaderItem(i));
+      // Filter out noise items strictly
+      items = items.filter(i => !isNoiseItem(i));
 
       if (hideCompleted) {
         items = items.filter(i => !i._completed);
@@ -286,7 +290,7 @@
         return { ...item, _id: id, _completed: !!completedState[id] || getField(item, ['status']).toLowerCase() === 'completed' };
       });
 
-      items = items.filter(i => !isHeaderItem(i));
+      items = items.filter(i => !isNoiseItem(i));
 
       if (hideCompleted) {
         items = items.filter(i => !i._completed);
@@ -317,7 +321,7 @@
         return { ...item, _id: id, _completed: !!completedState[id] || getField(item, ['status']).toLowerCase() === 'completed' };
       });
 
-      items = items.filter(i => !isHeaderItem(i));
+      items = items.filter(i => !isNoiseItem(i));
 
       if (hideCompleted) {
         items = items.filter(i => !i._completed);
